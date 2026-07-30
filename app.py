@@ -1,31 +1,11 @@
 import streamlit as st
-from fpdf import FPDF
 from datetime import date
+from utils.checklist_data import get_structure
+from utils.pdf_generator import generate_pdf, build_filename
 
 st.set_page_config(page_title="FAT/SAT Checklist", layout="centered")
 
-# ---------- Checklist Definitions ----------
-
-FAT_STRUCTURE = {
-    "FAT Protocols": ["Drawing", "Dimensions", "Machine drawing with utilities"],
-    "Nameplate": ["Nameplate"],
-    "Toolkit": ["Toolkit"],
-    "Manual": ["Technical documents", "Operational documents", "Maintenance documents", "Installation documents"],
-    "Drawings": ["Electrical drawings", "P&ID", "Pneumatic drawings"],
-    "Backups": ["HMI backup", "PLC backup"],
-    "Certificates": ["Material certificates", "Instrument calibration certificate", "OEL certificate"],
-    "Validation Certificates": ["IQ", "OQ"],
-    "Alarm List": ["Alarm list"],
-}
-
-SAT_EXTRA_STRUCTURE = {
-    "Site Activities": ["Machine placement", "Hard file documentation provided", "Receiving confirmation"],
-}
-
 # ---------- Session State Init ----------
-
-if "checklist_data" not in st.session_state:
-    st.session_state.checklist_data = {}
 
 if "has_lef" not in st.session_state:
     st.session_state.has_lef = False
@@ -69,18 +49,12 @@ def render_section(section, items, key_prefix):
         section_data.append({"item": item, "status": status, "notes": notes})
     checklist_data[section] = section_data
 
-# Render FAT sections (always, since SAT includes FAT items)
-for section, items in FAT_STRUCTURE.items():
-    if section == "Certificates" and st.session_state.has_lef:
-        render_section(section, items + ["HEPA certificates"], test_type)
-    else:
-        render_section(section, items, test_type)
+structure = get_structure(test_type, has_lef=st.session_state.has_lef)
 
-# Render SAT-only sections
+for section, items in structure.items():
+    render_section(section, items, test_type)
+
 if test_type == "SAT":
-    for section, items in SAT_EXTRA_STRUCTURE.items():
-        render_section(section, items, test_type)
-
     st.subheader("Validation")
     validation_notes = st.text_area(
         "Client Validation Notes (to be filled by client)",
@@ -103,48 +77,6 @@ else:
 st.divider()
 
 # ---------- PDF Generation ----------
-
-def generate_pdf(test_type, project_name, machine_name, checklist_data, validation_notes, survey_rating):
-    pdf = FPDF()
-    pdf.add_page()
-
-    pdf.set_font("Helvetica", "B", 16)
-    pdf.cell(0, 10, f"{test_type} Report", ln=True)
-
-    pdf.set_font("Helvetica", size=11)
-    pdf.cell(0, 8, f"Project: {project_name}", ln=True)
-    pdf.cell(0, 8, f"Machine: {machine_name}", ln=True)
-    pdf.cell(0, 8, f"Date: {date.today().strftime('%Y-%m-%d')}", ln=True)
-    pdf.ln(4)
-
-    for section, items in checklist_data.items():
-        pdf.set_font("Helvetica", "B", 13)
-        pdf.cell(0, 8, section, ln=True)
-        pdf.set_font("Helvetica", size=10)
-        for entry in items:
-            line = f"- {entry['item']}: {entry['status']}"
-            pdf.multi_cell(0, 6, line)
-            if entry["notes"]:
-                pdf.set_font("Helvetica", "I", 9)
-                pdf.multi_cell(0, 5, f"   Notes: {entry['notes']}")
-                pdf.set_font("Helvetica", size=10)
-        pdf.ln(2)
-
-    if test_type == "SAT":
-        pdf.set_font("Helvetica", "B", 13)
-        pdf.cell(0, 8, "Validation", ln=True)
-        pdf.set_font("Helvetica", size=10)
-        pdf.multi_cell(0, 6, validation_notes or "N/A")
-        pdf.ln(2)
-
-        pdf.set_font("Helvetica", "B", 13)
-        pdf.cell(0, 8, "Client Satisfaction Survey", ln=True)
-        pdf.set_font("Helvetica", size=10)
-        pdf.cell(0, 8, f"Rating: {survey_rating} / 5", ln=True)
-
-    return bytes(pdf.output())
-
-st.subheader("Generate Report")
 
 st.subheader("Generate Report")
 
