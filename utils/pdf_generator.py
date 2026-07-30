@@ -45,7 +45,8 @@ def generate_pdf(test_type, project_name, machine_name, checklist_data, validati
         pdf.set_font("Helvetica", "B", 13)
         pdf.cell(0, 8, "Client Satisfaction Survey", ln=True)
         pdf.set_font("Helvetica", size=10)
-        pdf.cell(0, 8, clean_text(f"Rating: {survey_rating} / 5" if survey_rating else "Rating: N/A"), ln=True)
+        rating_text = f"Rating: {survey_rating} / 5" if survey_rating else "Rating: N/A"
+        pdf.cell(0, 8, clean_text(rating_text), ln=True)
 
     return bytes(pdf.output())
 
