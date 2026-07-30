@@ -9,44 +9,53 @@ def clean_text(text):
     return str(text).encode("latin-1", "replace").decode("latin-1")
 
 
+def write_line(pdf, text, height=6, style=""):
+    """Safely write a line, resetting x to the left margin first."""
+    pdf.set_x(pdf.l_margin)
+    if style:
+        pdf.set_font("Helvetica", style, pdf.font_size_pt)
+    pdf.multi_cell(pdf.epw, height, clean_text(text))
+
+
 def generate_pdf(test_type, project_name, machine_name, checklist_data, validation_notes=None, survey_rating=None):
     pdf = FPDF()
+    pdf.set_auto_page_break(auto=True, margin=15)
     pdf.add_page()
 
     pdf.set_font("Helvetica", "B", 16)
-    pdf.cell(0, 10, clean_text(f"{test_type} Report"), ln=True)
+    write_line(pdf, f"{test_type} Report", height=10)
 
     pdf.set_font("Helvetica", size=11)
-    pdf.cell(0, 8, clean_text(f"Project: {project_name}"), ln=True)
-    pdf.cell(0, 8, clean_text(f"Machine: {machine_name}"), ln=True)
-    pdf.cell(0, 8, clean_text(f"Date: {date.today().strftime('%Y-%m-%d')}"), ln=True)
+    write_line(pdf, f"Project: {project_name}", height=8)
+    write_line(pdf, f"Machine: {machine_name}", height=8)
+    write_line(pdf, f"Date: {date.today().strftime('%Y-%m-%d')}", height=8)
     pdf.ln(4)
 
     for section, items in checklist_data.items():
         pdf.set_font("Helvetica", "B", 13)
-        pdf.cell(0, 8, clean_text(section), ln=True)
+        write_line(pdf, section, height=8)
         pdf.set_font("Helvetica", size=10)
         for entry in items:
             line = f"- {entry['item']}: {entry['status']}"
-            pdf.multi_cell(0, 6, clean_text(line))
+            write_line(pdf, line, height=6)
             if entry.get("notes"):
                 pdf.set_font("Helvetica", "I", 9)
-                pdf.multi_cell(0, 5, clean_text(f"   Notes: {entry['notes']}"))
+                write_line(pdf, f"   Notes: {entry['notes']}", height=5)
                 pdf.set_font("Helvetica", size=10)
         pdf.ln(2)
 
     if test_type == "SAT":
         pdf.set_font("Helvetica", "B", 13)
-        pdf.cell(0, 8, "Validation", ln=True)
+        write_line(pdf, "Validation", height=8)
         pdf.set_font("Helvetica", size=10)
-        pdf.multi_cell(0, 6, clean_text(validation_notes or "N/A"))
+        write_line(pdf, validation_notes or "N/A", height=6)
         pdf.ln(2)
 
         pdf.set_font("Helvetica", "B", 13)
-        pdf.cell(0, 8, "Client Satisfaction Survey", ln=True)
+        write_line(pdf, "Client Satisfaction Survey", height=8)
         pdf.set_font("Helvetica", size=10)
         rating_text = f"Rating: {survey_rating} / 5" if survey_rating else "Rating: N/A"
-        pdf.cell(0, 8, clean_text(rating_text), ln=True)
+        write_line(pdf, rating_text, height=8)
 
     return bytes(pdf.output())
 
