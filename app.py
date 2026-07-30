@@ -146,6 +146,8 @@ def generate_pdf(test_type, project_name, machine_name, checklist_data, validati
 
 st.subheader("Generate Report")
 
+st.subheader("Generate Report")
+
 if st.button("Generate PDF"):
     if not project_name or not machine_name:
         st.warning("Please fill in Project Name and Machine Name before generating the report.")
@@ -155,13 +157,13 @@ if st.button("Generate PDF"):
             checklist_data, validation_notes, survey_rating
         )
         st.session_state["pdf_bytes"] = pdf_bytes
+        st.session_state["pdf_filename"] = build_filename(test_type, project_name)
         st.success("PDF generated successfully.")
 
 if "pdf_bytes" in st.session_state:
-    filename = f"{test_type}_{project_name or 'report'}_{date.today()}.pdf".replace(" ", "_")
     st.download_button(
         label="Download PDF",
         data=st.session_state["pdf_bytes"],
-        file_name=filename,
+        file_name=st.session_state["pdf_filename"],
         mime="application/pdf",
     )
