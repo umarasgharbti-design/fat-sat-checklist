@@ -1,6 +1,12 @@
 from fpdf import FPDF
 from datetime import date
 
+# ---- Fill these in with your actual details ----
+COMPANY_PHONE = "+92-XXX-XXXXXXX"
+COMPANY_EMAIL = "info@yourcompany.com"
+COMPANY_WEBSITE = "www.yourcompany.com"
+LOGO_PATH = "assets/logo.png"
+
 
 def clean_text(text):
     """Strip characters that core PDF fonts (Latin-1 only) can't render."""
@@ -10,16 +16,34 @@ def clean_text(text):
 
 
 def write_line(pdf, text, height=6, style=""):
-    """Safely write a line, resetting x to the left margin first."""
     pdf.set_x(pdf.l_margin)
     if style:
         pdf.set_font("Helvetica", style, pdf.font_size_pt)
     pdf.multi_cell(pdf.epw, height, clean_text(text))
 
 
+class ReportPDF(FPDF):
+    def header(self):
+        try:
+            self.image(LOGO_PATH, x=10, y=8, w=30)
+        except Exception:
+            pass  # skip logo if file missing, don't crash the report
+        self.set_y(10)
+        self.set_x(45)
+        self.set_font("Helvetica", "B", 14)
+        self.cell(0, 10, "Business Tacts International", ln=True)
+        self.ln(10)
+
+    def footer(self):
+        self.set_y(-15)
+        self.set_font("Helvetica", size=8)
+        footer_text = f"{COMPANY_PHONE}  |  {COMPANY_EMAIL}  |  {COMPANY_WEBSITE}"
+        self.cell(0, 10, clean_text(footer_text), align="C")
+
+
 def generate_pdf(test_type, project_name, machine_name, checklist_data, validation_notes=None, survey_rating=None):
-    pdf = FPDF()
-    pdf.set_auto_page_break(auto=True, margin=15)
+    pdf = ReportPDF()
+    pdf.set_auto_page_break(auto=True, margin=20)
     pdf.add_page()
 
     pdf.set_font("Helvetica", "B", 16)
